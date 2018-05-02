@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, TypeFamilies, QuasiQuotes, TemplateHaskell, DeriveGeneric #-}
 module WeatherService.Service (WeatherField(..)
                               , dayHandler
-                              , dayPutHandler) where
+                              , dayPutHandler
+                              , rangeHandler
+                              , maxHandler
+                              , aboveHandler) where
 {-| Semester 2 assignment for CI285, University of Brighton
     Jim Burton <j.burton@brighton.ac.uk>
 -}
@@ -55,6 +58,39 @@ dayPutHandler d t conn = do
   case r of
     [] -> insertHandler d t conn
     _  -> updateHandler d t conn
+
+{-| Handle reuests for a range. -}
+rangeHandler :: Text -> Text -> Connection -> ServerPart Response
+rangeHandler d t conn = do
+  r <- liftIO (queryNamed conn "SELECT the_date, temperature \
+                               \ FROM  weather \
+                               \ WHERE the_date BETWEEN :dt AND :et" [":dt" := d, ":et" := t] :: IO [WeatherField])
+  liftIO $ debugM "Date Query" (listToOutput r)
+  case r of
+    [] -> notFoundHandler
+    _  -> ok $ toResponse (listToOutput r)
+
+{-| Handle reuests for max temperature. -}
+maxHandler :: Text -> Text -> Connection -> ServerPart Response
+maxHandler d t conn = do
+  r <- liftIO (queryNamed conn "SELECT the_date, MAX(temperature) \
+                               \ FROM  weather \
+                               \ WHERE the_date BETWEEN :dt AND :et" [":dt" := d, ":et" := t] :: IO [WeatherField])
+  liftIO $ debugM "Date Query" (listToOutput r)
+  case r of
+    [] -> notFoundHandler
+    _  -> ok $ toResponse (listToOutput r)
+
+{-| Handle reuests for above a temperature. -}
+aboveHandler :: Text -> Connection -> ServerPart Response
+aboveHandler d conn = do
+  r <- liftIO (queryNamed conn "SELECT the_date, temperature \
+                               \ FROM  weather \
+                               \ WHERE temperature>=:dt " [":dt" := d] :: IO [WeatherField])
+  liftIO $ debugM "Date Query" (listToOutput r)
+  case r of
+    [] -> notFoundHandler
+    _  -> ok $ toResponse (listToOutput r)
 
 {-| Insert a new date/temperature pair. -}
 insertHandler :: Text -> Text -> Connection -> ServerPart Response
