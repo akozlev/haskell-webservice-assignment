@@ -28,4 +28,10 @@ main = do
                                path $ \d -> dayHandler d conn
       , dirs "weather/date" $ do method PUT
                                  path $ \d -> path $ \t -> dayPutHandler d t conn
+      , dirs "weather/range" $ do method GET
+                                  path $ \d -> path $ \t -> rangeHandler d t conn
+      , dirs "weather/max" $ do method GET
+                                path $ \d -> path $ \t -> maxHandler d t conn
+      , dirs "weather/above" $ do method GET
+                                  path $ \d -> aboveHandler d conn
       ]
